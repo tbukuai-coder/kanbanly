@@ -1,4 +1,6 @@
-require('dotenv').config();
+if (!process.env.VERCEL) {
+  require('dotenv').config();
+}
 
 const express = require('express');
 const cors = require('cors');
@@ -40,8 +42,10 @@ app.get('/api/health', (req, res) => {
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Kanban API server running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Kanban API server running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;

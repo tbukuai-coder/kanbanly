@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef, AfterViewInit, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BoardService } from '../../services/board.service';
 import { BoardDetail } from '../../models/board.model';
-import Gantt from 'frappe-gantt/dist/frappe-gantt.min.js';
+import Gantt from 'frappe-gantt';
 
 @Component({
   selector: 'app-gantt',
@@ -45,18 +45,19 @@ import Gantt from 'frappe-gantt/dist/frappe-gantt.min.js';
     ::ng-deep .gantt-container { font-family: inherit; }
   `]
 })
-export class GanttComponent implements OnInit, OnDestroy, AfterViewInit {
+export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked {
   private route = inject(ActivatedRoute);
   private boardService = inject(BoardService);
+  private cdr = inject(ChangeDetectorRef);
 
-  @ViewChild('ganttContainer', { static: true }) ganttContainer!: ElementRef;
+  @ViewChild('ganttContainer') ganttContainer!: ElementRef;
 
   board = signal<BoardDetail | null>(null);
   taskList = signal<Gantt.Task[]>([]);
 
   private ganttInstance: Gantt | null = null;
   private boardLoaded = false;
-  private viewReady = false;
+  private renderPending = false;
 
   ngOnInit(): void {
     const boardId = Number(this.route.snapshot.paramMap.get('id'));
@@ -64,8 +65,14 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.viewReady = true;
     this.tryRender();
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.renderPending && this.ganttContainer) {
+      this.renderPending = false;
+      this.tryRender();
+    }
   }
 
   ngOnDestroy(): void {
@@ -80,20 +87,22 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit {
       this.board.set(board);
       this.taskList.set(this.mapCardsToTasks(board));
       this.boardLoaded = true;
-      this.tryRender();
+      if (!this.ganttContainer) {
+        // The @if block hasn't rendered the container yet; wait for AfterViewChecked
+        this.renderPending = true;
+        this.cdr.detectChanges();
+      } else {
+        this.tryRender();
+      }
     });
   }
 
   private tryRender(): void {
-    console.log('[Gantt] tryRender called', { boardLoaded: this.boardLoaded, viewReady: this.viewReady, hasContainer: !!this.ganttContainer });
-    if (!this.boardLoaded || !this.viewReady) return;
+    if (!this.boardLoaded) return;
+    if (!this.ganttContainer) return;
     const tasks = this.taskList();
-    console.log('[Gantt] tasks:', tasks.length, tasks);
-    if (tasks.length > 0 && this.ganttContainer) {
-      console.log('[Gantt] container dimensions:', this.ganttContainer.nativeElement.offsetWidth, 'x', this.ganttContainer.nativeElement.offsetHeight);
+    if (tasks.length > 0) {
       this.renderGantt(tasks);
-    } else {
-      console.log('[Gantt] NOT rendering — tasks:', tasks.length, 'container:', !!this.ganttContainer);
     }
   }
 

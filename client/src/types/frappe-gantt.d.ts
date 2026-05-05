@@ -1,4 +1,10 @@
-declare module 'frappe-gantt/dist/frappe-gantt.min.js' {
-  import Gantt from 'frappe-gantt';
-  export default Gantt;
+import Gantt from 'frappe-gantt';
+
+declare global {
+  interface Window {
+    Gantt: typeof Gantt;
+  }
+  const Gantt: typeof Gantt;
 }
+
+export {};

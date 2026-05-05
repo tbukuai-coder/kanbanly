@@ -30,7 +30,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/frappe-gantt/dist/frappe-gantt.css"
             ],
             "scripts": []
           },
@@ -49,6 +50,7 @@
                 }
               ],
               "outputHashing": "all",
+              "allowedCommonJsDependencies": ["frappe-gantt"],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

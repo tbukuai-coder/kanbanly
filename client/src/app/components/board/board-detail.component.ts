@@ -24,7 +24,10 @@ import { ActivityFeedComponent } from '../activity/activity-feed.component';
           @if (b.description) {
             <p class="board-description">{{ b.description }}</p>
           }
-          <app-search-bar (searchChange)="onSearch($event)" />
+          <div class="board-actions">
+            <app-search-bar (searchChange)="onSearch($event)" />
+            <a [routerLink]="['/boards', b.id, 'gantt']" class="btn-gantt">📊 Gantt View</a>
+          </div>
         </div>
 
         <div class="kanban-board">
@@ -68,6 +71,9 @@ import { ActivityFeedComponent } from '../activity/activity-feed.component';
     .board-header { margin-bottom: 1.5rem; }
     .back-link { color: #3b82f6; text-decoration: none; font-size: 0.875rem; }
     .board-description { color: #64748b; }
+    .board-actions { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem; flex-wrap: wrap; }
+    .btn-gantt { padding: 0.375rem 0.75rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #16a34a; text-decoration: none; font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
+    .btn-gantt:hover { background: #dcfce7; }
     .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start; }
     .loading { text-align: center; padding: 3rem; color: #94a3b8; }
     .add-column-container { min-width: 250px; flex-shrink: 0; }

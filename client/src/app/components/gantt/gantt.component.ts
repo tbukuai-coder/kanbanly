@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BoardService } from '../../services/board.service';
 import { BoardDetail } from '../../models/board.model';
-import Gantt from 'frappe-gantt';
+import type Gantt from 'frappe-gantt';
 
 @Component({
   selector: 'app-gantt',
@@ -55,13 +55,17 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterVi
   board = signal<BoardDetail | null>(null);
   taskList = signal<Gantt.Task[]>([]);
 
-  private ganttInstance: Gantt | null = null;
+  private ganttInstance: InstanceType<typeof Gantt> | null = null;
   private boardLoaded = false;
   private renderPending = false;
+  private scriptLoaded = false;
 
   ngOnInit(): void {
     const boardId = Number(this.route.snapshot.paramMap.get('id'));
-    this.loadBoard(boardId);
+    this.loadScript().then(() => {
+      this.scriptLoaded = true;
+      this.loadBoard(boardId);
+    });
   }
 
   ngAfterViewInit(): void {
@@ -82,13 +86,26 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterVi
     }
   }
 
+  private loadScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof window !== 'undefined' && 'Gantt' in window) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'assets/frappe-gantt.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load frappe-gantt'));
+      document.head.appendChild(script);
+    });
+  }
+
   private loadBoard(id: number): void {
     this.boardService.getBoardDetail(id).subscribe(board => {
       this.board.set(board);
       this.taskList.set(this.mapCardsToTasks(board));
       this.boardLoaded = true;
       if (!this.ganttContainer) {
-        // The @if block hasn't rendered the container yet; wait for AfterViewChecked
         this.renderPending = true;
         this.cdr.detectChanges();
       } else {
@@ -99,6 +116,7 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterVi
 
   private tryRender(): void {
     if (!this.boardLoaded) return;
+    if (!this.scriptLoaded) return;
     if (!this.ganttContainer) return;
     const tasks = this.taskList();
     if (tasks.length > 0) {
@@ -156,10 +174,13 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterVi
       this.ganttInstance.clear();
       this.ganttInstance = null;
     }
-    // Clear any previous content
     this.ganttContainer.nativeElement.innerHTML = '';
-    console.log('[Gantt] creating Gantt with tasks:', tasks);
-    this.ganttInstance = new Gantt(this.ganttContainer.nativeElement, tasks, {
+    const GanttLib = (window as any).Gantt;
+    if (!GanttLib) {
+      console.error('frappe-gantt not loaded');
+      return;
+    }
+    this.ganttInstance = new GanttLib(this.ganttContainer.nativeElement, tasks, {
       view_mode: 'Week',
       date_format: 'YYYY-MM-DD',
       bar_height: 25,
@@ -172,6 +193,5 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterVi
         }
       },
     });
-    console.log('[Gantt] Gantt rendered, SVG:', this.ganttContainer.nativeElement.querySelector('svg'));
   }
 }

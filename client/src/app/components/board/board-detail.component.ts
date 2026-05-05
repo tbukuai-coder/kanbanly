@@ -1,8 +1,10 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BoardService } from '../../services/board.service';
 import { CardService } from '../../services/card.service';
+import { ColumnService } from '../../services/column.service';
 import { BoardDetail } from '../../models/board.model';
 import { Card } from '../../models/card.model';
 import { ColumnComponent } from '../column/column.component';
@@ -12,7 +14,7 @@ import { ActivityFeedComponent } from '../activity/activity-feed.component';
 @Component({
   selector: 'app-board-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ColumnComponent, SearchBarComponent, ActivityFeedComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ColumnComponent, SearchBarComponent, ActivityFeedComponent],
   template: `
     <div class="board-detail">
       @if (board(); as b) {
@@ -37,6 +39,23 @@ import { ActivityFeedComponent } from '../activity/activity-feed.component';
               (cardCreated)="onCardCreated()"
             />
           }
+          <div class="add-column-container">
+            @if (showColumnForm()) {
+              <div class="column-form">
+                <input
+                  type="text"
+                  [(ngModel)]="newColumnName"
+                  placeholder="Column name"
+                  (keyup.enter)="createColumn()"
+                  autofocus
+                />
+                <button class="btn-save" (click)="createColumn()">Add</button>
+                <button class="btn-cancel" (click)="toggleColumnForm()">Cancel</button>
+              </div>
+            } @else {
+              <button class="btn-add-column" (click)="toggleColumnForm()">+ Add Column</button>
+            }
+          </div>
         </div>
 
         <app-activity-feed [boardId]="b.id" />
@@ -51,15 +70,25 @@ import { ActivityFeedComponent } from '../activity/activity-feed.component';
     .board-description { color: #64748b; }
     .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start; }
     .loading { text-align: center; padding: 3rem; color: #94a3b8; }
+    .add-column-container { min-width: 250px; flex-shrink: 0; }
+    .btn-add-column { width: 100%; padding: 0.75rem; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 8px; color: #64748b; cursor: pointer; font-size: 0.875rem; }
+    .btn-add-column:hover { background: #e2e8f0; border-color: #94a3b8; }
+    .column-form { background: #fff; border-radius: 8px; padding: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .column-form input { width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 0.5rem; box-sizing: border-box; }
+    .column-form .btn-save { padding: 0.5rem 1rem; background: #3b82f6; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-right: 0.5rem; }
+    .column-form .btn-cancel { padding: 0.5rem 1rem; background: #f1f5f9; border: none; border-radius: 4px; cursor: pointer; }
   `]
 })
 export class BoardDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private boardService = inject(BoardService);
   private cardService = inject(CardService);
+  private columnService = inject(ColumnService);
 
   board = signal<BoardDetail | null>(null);
   searchQuery = signal('');
+  showColumnForm = signal(false);
+  newColumnName = '';
 
   columnIds = computed(() => {
     const b = this.board();
@@ -119,6 +148,24 @@ export class BoardDetailComponent implements OnInit {
 
   onCardCreated(): void {
     this.reloadBoard();
+  }
+
+  toggleColumnForm(): void {
+    this.showColumnForm.update(v => !v);
+    if (!this.showColumnForm()) this.newColumnName = '';
+  }
+
+  createColumn(): void {
+    const name = this.newColumnName.trim();
+    if (!name) return;
+    const b = this.board();
+    if (!b) return;
+    const position = b.columns.length;
+    this.columnService.createColumn({ board_id: b.id, name, position }).subscribe(() => {
+      this.newColumnName = '';
+      this.showColumnForm.set(false);
+      this.reloadBoard();
+    });
   }
 
   private reloadBoard(): void {

@@ -19,8 +19,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4200';
 
-initializeDatabase();
-
 app.use(helmet());
 app.use(cors({
   origin: CLIENT_URL,
@@ -43,9 +41,13 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Kanban API server running on http://localhost:${PORT}`);
+  initializeDatabase().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Kanban API server running on http://localhost:${PORT}`);
+    });
   });
+} else {
+  initializeDatabase();
 }
 
 module.exports = app;

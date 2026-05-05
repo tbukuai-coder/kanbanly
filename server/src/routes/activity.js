@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/connection');
+const { getDb, execSelect } = require('../db/connection');
 
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
+    const db = await getDb();
     const { board_id, card_id, limit = 50, offset = 0 } = req.query;
 
     if (!board_id && !card_id) {
@@ -27,7 +28,7 @@ router.get('/', (req, res, next) => {
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
 
-    const activities = db.prepare(query).all(...params);
+    const activities = execSelect(db, query, params);
     res.json(activities);
   } catch (err) {
     next(err);

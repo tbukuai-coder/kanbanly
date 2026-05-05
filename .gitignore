@@ -1,0 +1,6 @@
+# Server data
+server/data/
+
+# Environment
+.env
+.env.local

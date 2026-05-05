@@ -48,6 +48,10 @@ router.post('/', async (req, res, next) => {
       throw err;
     }
     const id = execInsert(db, 'INSERT INTO boards (name, description) VALUES (?, ?)', [name, description || null]);
+    const defaultColumns = ['To Do', 'In Progress', 'Done'];
+    defaultColumns.forEach((colName, i) => {
+      execInsert(db, 'INSERT INTO columns (board_id, name, position) VALUES (?, ?, ?)', [id, colName, i]);
+    });
     const board = execSelectOne(db, 'SELECT * FROM boards WHERE id = ?', [id]);
     res.status(201).json(board);
   } catch (err) {

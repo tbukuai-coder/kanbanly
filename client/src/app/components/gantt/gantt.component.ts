@@ -85,10 +85,15 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private tryRender(): void {
+    console.log('[Gantt] tryRender called', { boardLoaded: this.boardLoaded, viewReady: this.viewReady, hasContainer: !!this.ganttContainer });
     if (!this.boardLoaded || !this.viewReady) return;
     const tasks = this.taskList();
+    console.log('[Gantt] tasks:', tasks.length, tasks);
     if (tasks.length > 0 && this.ganttContainer) {
+      console.log('[Gantt] container dimensions:', this.ganttContainer.nativeElement.offsetWidth, 'x', this.ganttContainer.nativeElement.offsetHeight);
       this.renderGantt(tasks);
+    } else {
+      console.log('[Gantt] NOT rendering — tasks:', tasks.length, 'container:', !!this.ganttContainer);
     }
   }
 
@@ -142,6 +147,9 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit {
       this.ganttInstance.clear();
       this.ganttInstance = null;
     }
+    // Clear any previous content
+    this.ganttContainer.nativeElement.innerHTML = '';
+    console.log('[Gantt] creating Gantt with tasks:', tasks);
     this.ganttInstance = new Gantt(this.ganttContainer.nativeElement, tasks, {
       view_mode: 'Week',
       date_format: 'YYYY-MM-DD',
@@ -155,5 +163,6 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       },
     });
+    console.log('[Gantt] Gantt rendered, SVG:', this.ganttContainer.nativeElement.querySelector('svg'));
   }
 }

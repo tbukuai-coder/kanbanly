@@ -93,7 +93,7 @@ export class GanttComponent implements OnInit, OnDestroy, AfterViewInit, AfterVi
         return;
       }
       const script = document.createElement('script');
-      script.src = 'assets/frappe-gantt.min.js';
+      script.src = '/assets/frappe-gantt.min.js';
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('Failed to load frappe-gantt'));
       document.head.appendChild(script);

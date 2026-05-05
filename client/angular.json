@@ -50,7 +50,6 @@
                 }
               ],
               "outputHashing": "all",
-              "allowedCommonJsDependencies": ["frappe-gantt"],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BoardService } from '../../services/board.service';
 import { BoardDetail } from '../../models/board.model';
-import { Card } from '../../models/card.model';
 import Gantt from 'frappe-gantt/dist/frappe-gantt.min.js';
 
 @Component({
@@ -91,16 +90,14 @@ export class GanttComponent implements OnInit, OnDestroy {
       columnColors[col.id] = palette[i % palette.length];
     });
 
-    return board.cards
-      .filter(card => card.due_date)
-      .map(card => {
-        const startDate = card.due_date
-          ? this.getStartDate(card)
-          : new Date(card.created_at);
-        const endDate = card.due_date
-          ? new Date(card.due_date)
+    return board.cards.map(card => {
+        const hasDue = !!card.due_date;
+        const endDate = hasDue
+          ? new Date(card.due_date!)
           : this.addDays(new Date(card.created_at), 1);
-        const col = board.columns.find(c => c.id === card.column_id);
+        const startDate = hasDue
+          ? this.addDays(new Date(card.due_date!), -3)
+          : new Date(card.created_at);
         return {
           id: `card-${card.id}`,
           name: card.title,
@@ -111,14 +108,6 @@ export class GanttComponent implements OnInit, OnDestroy {
           color: columnColors[card.column_id] || '#6b7280',
         } as Gantt.Task;
       });
-  }
-
-  private getStartDate(card: Card): Date {
-    if (card.due_date) {
-      const due = new Date(card.due_date);
-      return this.addDays(due, -3);
-    }
-    return new Date(card.created_at);
   }
 
   private getProgressForColumn(columnId: number, columns: { id: number }[]): number {

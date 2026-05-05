@@ -1,6 +1,25 @@
 const fs = require('fs');
 const path = require('path');
-const initSqlJs = require('sql.js');
+
+let SQL = null;
+
+async function getSqlJs() {
+  if (SQL) return SQL;
+
+  const sqlJs = require('sql.js');
+
+  // Locate the wasm file — works for local dev, Vercel serverless, and bundled environments
+  const wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm');
+
+  SQL = await sqlJs({
+    locateFile: (file) => {
+      if (file.endsWith('.wasm')) return wasmPath;
+      return file;
+    }
+  });
+
+  return SQL;
+}
 
 const DB_PATH = path.join(__dirname, '../../data/kanban.db');
 
@@ -9,7 +28,7 @@ let dbInstance = null;
 async function getDb() {
   if (dbInstance) return dbInstance;
 
-  const SQL = await initSqlJs();
+  const SQL = await getSqlJs();
 
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH);
